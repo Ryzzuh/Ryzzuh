@@ -18,28 +18,34 @@ app.run(function () {
   console.log(secondScriptTag);
   widgetIframe = document.getElementById('sc-widget');
   //widget = SC.Widget(widgetIframe);
+  //console.log(SC);
+  //setTimeout(function(){console.log("blah",SC)},700);
   
+  // var tag = document.createElement('script');
+  // tag.src = "css/bootstrap.css"
+  // var thirdScriptTag = document.getElementsByTagName('script')[0];
+  // thirdScriptTag.parentNode.insertBefore(tag, thirdScriptTag);
+  // console.log(thirdScriptTag);
+
 });
 
 // Main Ctrl
 
 app.controller('MainCtrl', function($log, $scope, $http, $filter, $window, myService) {
-	myService.bindPlayer2();
-
-	//initialize Soundcloud
-	setTimeout(function(){widget = $window.SC.Widget(widgetIframe)},400);
-
-	this.logWidget = function() {console.log($window.SC)};
-  	var self = this;
 
 	myService.getData().then(function(data) {
 		//pull data from service
 		//
         $scope.todos = data;
+        $scope.SC = $window.SC;
     });
+
+    var self = this;
 
   	self.logAll = function(){console.log($scope.todos)};
   	self.logView = function(){console.log($scope.data)};
+  	self.logSource = function(){myService.logTrack()};
+  	self.logHistory = function(){myService.logHistory()};
 
   	init();
     function init() {
@@ -51,37 +57,30 @@ app.controller('MainCtrl', function($log, $scope, $http, $filter, $window, mySer
     }
 
     self.playSomething = function (id, title) {
-	    console.log("you pressed play something");
+	    console.log("playing something");
 	    console.log("data length: ", $scope.data.length);
 	    var x = Math.floor((Math.random() * $scope.data.length));
 	    track = $scope.data[x];
-		$scope.source = track.source
-	    $scope.id = track.Id;
-	    $scope.title = track.title;
 
-	    launchSource($scope.id, $scope.title, $scope.source)
-	    function launchSource(id, title, source) {
-	    	console.log(id, title)
-	    	if(source == 'YT'){
-	    		myService.launchPlayer($scope.id, title);
-	    	} else if (source == "SC"){
-	    		myService.launchPlayerSC(track.link, title);
-	    		console.log("sjdkjsdkjk");
-	    		setTimeout(function(){widget.play();},3000)
-	    	};	
-	    };
+	    myService.launchPlayer(track);
+
 	    
+	    $log.info('Launched id:' + $scope.id + ' and title:' + $scope.title);
 
-	     
-	     
-
-	      //myService.archiveVideo(id, title);
-	      //myService.deleteVideo($scope.upcoming, id);
-	     
-
-
-	     $log.info('Launched id:' + $scope.id + ' and title:' + $scope.title);
     };
+
+    self.pausePlayers = function(){myService.pausePlayers()};
+
+    //links in tracklists
+    self.clicked = function (index) {
+    	console.log(index);
+    	track = $scope.data[index];
+    	console.log(track);
+    	console.log(track.source);
+    	myService.launchPlayer(track);
+    }
+
+    self.logFavourite = function(index){myService.logFavourite($scope.todos[index])}
 //end
 //
 
@@ -91,10 +90,11 @@ app.controller('MainCtrl', function($log, $scope, $http, $filter, $window, mySer
 
 app.service('myService', function ($window, $rootScope, $log, $http, $q){
 	var self = this;
-
+	//pull data from file
+	//
 	self.getData = function() { 
 	    var defer = $q.defer();
-	        $http({method: 'POST', url: 'data.json', data: {}})
+	        $http({method: 'GET', url: 'data/data.json', data: {}})
 	            .success(function(data, status, headers, config) {
 	                // return tracklist data
 	                //
@@ -109,6 +109,7 @@ app.service('myService', function ($window, $rootScope, $log, $http, $q){
 	    return defer.promise;
 		}
 
+
 	var youtube = {
 	    ready: false,
 	    player: null,
@@ -119,6 +120,10 @@ app.service('myService', function ($window, $rootScope, $log, $http, $q){
 	    playerWidth: '480',
 	    state: 'stopped'
 	  };
+
+	var history = [];
+	self.addHistory = function(item){history.push(item)}
+	self.logHistory = function(){console.log(history)};
 
 	 $window.onYouTubeIframeAPIReady = function () {
 	    $log.info('Youtube API is ready');
@@ -179,33 +184,62 @@ app.service('myService', function ($window, $rootScope, $log, $http, $q){
 	    }
 	  };
 
-	self.launchPlayer = function (id, title) {
-	    youtube.player.loadVideoById(id);
-	    youtube.videoId = id;
-	    youtube.videoTitle = title;
-	    return youtube;
+	self.pausePlayers = function(){
+		youtube.player.pauseVideo();
+		widget.pause();
+	}
+
+	self.launchPlayer = function (track) {
+	 	$rootScope.nowPlaying = track;
+	 	self.addHistory(track);
+
+	 	self.pausePlayers();
+		if (track.source == "YT"){
+		    youtube.player.loadVideoById(track.Id);
+		    youtube.videoId = track.id;
+		    youtube.videoTitle = track.title;
+		    return youtube;
+		}
+		else if (track.source = "SC"){
+			console.log("launching SC", track.id, track.title);
+		    widget.load(track.link, {auto_play:true});
+		    youtube.videoTitle = track.title;
+		}
 	  }
 
 	self.getYoutube = function () {
 	    return youtube;
 	  };
 
-	  //SC testing
-	self.bindPlayer2 = function () {
-		//elementId = 'sc-widget';
-	    //$log.info('Binding to ' + elementId);
-	    //SC = elementId;
-	    console.log("SC");
-	    //console.log(SC);
-	    console.log("SC");
-	    //widget = SC.Widget(widgetIframe);
-	  };
 
 	self.launchPlayerSC = function (id, title) {
-		console.log("launching SC");
-	    widget.load(id);
+		console.log("launching SC", id, title);
+	    widget.load(id, {auto_play:true});
 	    youtube.videoTitle = title;
 	  };
+	  //
+	  //
+	setTimeout(function(){
+							console.log("initializing widget")
+							widget = SC.Widget('sc-widget');
+							console.log(widget);
+							widget.bind(SC.Widget.Events.READY, function() {widget.play()})}
+							,2800);
+	//setTimeout(function(){widget.bind(SC.Widget.Events.READY, function() {widget.play()},800)});
+	self.logTrack = function(){console.log($rootScope.nowPlaying.source == "YT")}
+	self.logFavourite = function(item){
+							console.log(item);
+							if (localStorage[item.Id]){
+								console.log("removing Item")
+								localStorage.removeItem(item.Id);
+							} else{
+								console.log("adding Item")
+								localStorage.setItem(item.Id, true);
+							}
+						}
+
+	console.log("blah blah blah", localStorage);
+	$rootScope.fap = localStorage;
 
 })
 

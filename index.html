@@ -1,36 +1,49 @@
 <!-- File: chapter5/log-example.html -->
 <html ng-app="notesApp">
+<head>
+	<link href="css/bootstrap.css" rel="stylesheet">
+</head>
 <body>
 
 	<div ng-controller="MainCtrl as mainCtrl">
 	 <h1>Mash Music Services!</h1>
-	 <input type="text" ng-model="id" value="Submit form">
-	 <div ng-model="title">{{source}} - {{title}} - {{from}}</div>
-
-	<!-- LOAD SCFRAME  !!! -->
-     <iframe id="sc-widget" src="https://w.soundcloud.com/player/?url=http://api.soundcloud.com/users/1539950/favorites" scrolling="no" frameborder="no" style="float: left" width = "480px">
-     </iframe>
-     <!-- LOAD SCFRAME  !!! -->
-
-	 <div id="player">span</div>
-	 <br>
-	 <br>
+	<div ng-model="nowPlaying">{{nowPlaying.Id}} - {{nowPlaying.source}} - {{nowPlaying.title}} - {{nowPlaying.from}}</div>
+		<!-- LOAD SCFRAME  !!! -->
+	     <iframe id="sc-widget" ng-model="nowPlaying" ng-hide="nowPlaying.source == 'YT'" src="https://w.soundcloud.com/player/?url=http://api.soundcloud.com/users/1539950/favorites" scrolling="no" frameborder="no" width = "480px">
+	     </iframe>
+	     <!-- LOAD SCFRAME  !!! -->
+		<div ng-model="nowPlaying" ng-hide="nowPlaying.source == 'SC'">
+	 		<div id="player">Youtube Player</div>
+	 	</div>
+	 	<br>
 	<div>
-	 <button ng-click="mainCtrl.logAll()">Log todos</button>
-	 <button ng-click="mainCtrl.logView()">Log view "data"</button>
-	 <button ng-click="mainCtrl.playSomething()">Playsomething</button>
-	 <button ng-click="mainCtrl.logWidget()">logSC</button>
-	</div>
+		<img src= "images/previousfinal-1-01.png" width="50px">
+		<img src= "images/playfinal-1-01.png" width="50px">
+		<img src= "images/pausefinal-1-01.png" ng-click ="mainCtrl.pausePlayers()" width="50px">
+		<img src= "images/nextfinal-1-01.png" width="50px">
+		<img src= "images/stopfinal-1-01.png" width="50px">
 
-	<input type="text" ng-model="searchText"> <hr>    
+	 <!--button ng-click="mainCtrl.logAll()">Log todos</button-->
+	 <!--button ng-click="mainCtrl.logView()">Log view "data"</button-->
+	 <button ng-click="mainCtrl.playSomething()">Playsomething</button>
+	 <button ng-click="mainCtrl.logHistory()">logHistory</button>
+	</div>
+	<hr>
+	 Search: <input type="text" ng-model="searchText"> <hr>    
 	    Filtered list has {{data.length}} items
 	    <li ng-repeat="todo in data = (todos | filter:searchText)"
 	    	 id="{{todo.link}}"
 	    	 ng-click ="clicked($event.target.innerText)">
-	      <div id= "tracklist" data= "{{todo}}" ng-click="test2($index)">
+	    <div class="panel panel-info">
+	    <!--img ng-src= "images/heartfinal-1-01.png" id= "{{todo.Id}}" width="30px" ng-click="mainCtrl.logFavourite($index)"-->
+	    <img ng-src= "{{fap[todo.Id] == 'true' ? 'images/heartfinalchecked-1-01.png' : 'images/heartfinal-1-01.png' }}" id= "{{todo.Id}}" width="30px" ng-click="mainCtrl.logFavourite($index)">
+
+	      <div id= "tracklist" class= "panel-title btn btn-primary" data= "{{todo}}" ng-click="mainCtrl.clicked($index)" ng-mouseover="myStyle={color:'red', cursor:'pointer'}" ng-Mouseleave="myStyle={color:'black'}" ng-style="myStyle">
+			
 	      		{{todo.source}} -
 	      		{{todo.title}} - 
 	      	<em>{{todo.from}}</em>
+	      </div>
 	      </div>
 	    </li>
  	</div>
